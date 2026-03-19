@@ -1,4 +1,4 @@
-FROM ubuntu:focal
+FROM ubuntu:noble
 
 RUN apt-get update && apt-get install -y \
     autoconf \
@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     binutils-multiarch \
     binutils-aarch64-linux-gnu \
     bison \
+    dwarves \
     flex \
     gcc \
     xz-utils \
