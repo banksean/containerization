@@ -69,3 +69,23 @@ jobs:
           draft: true
           make_latest: false
           fail_on_unmatched_files: true
+
+  manual-release: 
+    if: github.event_name == 'workflow_dispatch'
+    name: Publish release
+    timeout-minutes: 30
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: kernel/vmlinux
+          token: ${{ github.token }}
+          name: ${{ github.ref_name }}-manual-release
+          draft: true
+          make_latest: false
+          fail_on_unmatched_files: true
