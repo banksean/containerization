@@ -1,0 +1,71 @@
+name: Build Linux kernel
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'kernel/**'
+
+jobs:
+  build:
+    name: Build vmlinux
+    runs-on: ubuntu-24.04-arm   # native arm64 — matches the kernel target arch
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build builder image
+        working-directory: kernel
+        run: docker build image/ -f image/Dockerfile -t kernel-build:0.1
+
+      - uses: actions/cache@v4
+        with:
+          path: kernel/source.tar.xz
+          key: kernel-source-linux-6.18.5
+
+      - name: Download kernel source
+        working-directory: kernel
+        run: |
+          KSOURCE="https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.18.5.tar.xz"
+          curl -SsL -o source.tar.xz "$KSOURCE"
+
+      - name: Build kernel
+        working-directory: kernel
+        run: |
+          docker run \
+            --rm \
+            --cpus 4 \
+            --memory 14g \
+            -v "$PWD":/kernel \
+            -w /kernel \
+            kernel-build:0.1 \
+            /bin/bash -c "./build.sh"
+
+      - name: Upload vmlinux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vmlinux
+          path: kernel/vmlinux
+          retention-days: 30
+
+  release: 
+    if: startsWith(github.ref, 'refs/tags/')
+    name: Publish release
+    timeout-minutes: 30
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: kernel/vmlinux
+          token: ${{ github.token }}
+          name: ${{ github.ref_name }}-release
+          draft: true
+          make_latest: false
+          fail_on_unmatched_files: true
