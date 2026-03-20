@@ -71,7 +71,7 @@ jobs:
         with:
           files: kernel/vmlinux
           token: ${{ github.token }}
-          name: ${{ github.ref_name }}-release
+          name: btf-enabled-kernel-${{ github.ref_name }}
           draft: true
           make_latest: false
           fail_on_unmatched_files: true
